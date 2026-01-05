@@ -1,10 +1,10 @@
 /** Author: @trungquandev (TrungQuanDev - Một Lập Trình Viên) - https://youtube.com/@trungquandev */
 
-import { MongoClient, Db, Collection, OptionalId } from 'mongodb'
+import { Collection, Db, MongoClient, OptionalId } from 'mongodb'
 
 import { logger } from './logger'
 
-import type { User} from '~/modules/users/user.types'
+import type { User } from '~/modules/users/user.types'
 
 let client: MongoClient
 let db: Db

@@ -6,7 +6,7 @@ import { z } from 'zod'
 dotenv.config()
 
 const schema = z.object({
-  NODE_ENV: z.enum(['development','test', 'staging', 'production']).default('development'),
+  NODE_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
   PORT: z.coerce.number().default(3000),
   MONGO_URI: z.url(),
   LOG_LEVEL: z.string().default('info'),

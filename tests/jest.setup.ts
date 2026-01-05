@@ -1,7 +1,6 @@
 /** Author: @trungquandev (TrungQuanDev - Một Lập Trình Viên) - https://youtube.com/@trungquandev */
 
-
-// Chuẩn hóa môi trường test (không ảnh hưởng tới các môi trường khác vì chỉ chạy trong tiến trình tesst)
+// Chuẩn hóa môi trường test (không ảnh hưởng tới các môi trường khác vì chỉ chạy trong tiến trình test)
 process.env.NODE_ENV = 'test'
 
 // Chuẩn hóa timezone về múi giờ chuẩn quốc tế UTC (tránh lệch giờ khi test các tính năng liên quan đến ngày tháng - Date)
@@ -12,9 +11,9 @@ const shouldMuteConsole = process.env.CI === 'true' || process.env.JEST_MUTE_CON
 if (shouldMuteConsole) {
   // beforeAll(): Chạy 1 lần trước toàn bộ test
   beforeAll(() => {
-    jest.spyOn(console, 'log').mockImplementation(() => {})
-    jest.spyOn(console, 'info').mockImplementation(() => {})
-    jest.spyOn(console, 'warn').mockImplementation(() => {})
+    jest.spyOn(console, 'log').mockImplementation(() => { })
+    jest.spyOn(console, 'info').mockImplementation(() => { })
+    jest.spyOn(console, 'warn').mockImplementation(() => { })
 
     // Giữ console.error để dễ debug, tùy dự án
     // jest.spyOn(console, 'error').mockImplementation(() => {})

@@ -28,7 +28,7 @@ export const createApp = () => {
   app.use(express.json())
   app.use(cookieParser())
   app.use(morgan('dev')) // dev preset: Ngắn gọn, có màu, phù hợp môi trường dev
-  
+
   app.use('/api', routes)
 
   // health
