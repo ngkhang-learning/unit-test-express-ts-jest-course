@@ -6,37 +6,67 @@ import { ApiError } from "~/core/http/ApiError";
 import { errorHandler } from "~/core/http/errorHandler";
 
 describe("errorHandler", () => {
-  it("should return custom api error", () => {
-    const mockReq = {} as Request;
-    const mockRes: Partial<Response> = {
+  let mockReq: Request;
+  let mockRes: Response;
+  let mockNext: jest.MockedFunction<NextFunction>;
+  let consoleErrorSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    mockReq = {} as unknown as Request;
+    mockRes = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockReturnThis(),
-    };
-    const mockNext = jest.fn() as unknown as NextFunction;
+    } as unknown as Response;
+    mockNext = jest.fn();
 
-    const mockError = new ApiError(StatusCodes.BAD_REQUEST, "Somethings went wrong", {});
-
-    // const result = errorHandler(mockError, mockReq as Request, mockRes as Response, mockNext);
-    errorHandler(mockError, mockReq as Request, mockRes as Response, mockNext);
-
-    expect(mockRes.status).toHaveBeenCalledWith(StatusCodes.BAD_REQUEST);
-    expect(mockRes.json).toHaveBeenCalledWith({ message: "Somethings went wrong", details: {} });
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
   })
 
+  describe("when handling ApiError", () => {
+    it("should return ApiError with statusCode, message and details", () => {
+      const mockDetails = { path: "email", message: "Invalid format" };
+      const mockError = new ApiError(StatusCodes.BAD_REQUEST, "Something went wrong", mockDetails);
 
-  it("should return error not handler", () => {
-    const mockReq = {} as Request;
-    const mockRes: Partial<Response> = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
-    };
-    const mockNext = jest.fn() as unknown as NextFunction;
+      const result = errorHandler(mockError, mockReq, mockRes, mockNext);
 
-    const mockError = "Somethings went wrong";
+      expect(result.status).toHaveBeenCalledWith(StatusCodes.BAD_REQUEST);
+      expect(result.json).toHaveBeenCalledWith({
+        message: "Something went wrong",
+        details: mockDetails,
+      });
+    })
 
-    errorHandler(mockError, mockReq as Request, mockRes as Response, mockNext);
+    it("should not log ApiError to console", () => {
+      const error = ApiError.BadRequest("Invalid input");
 
-    expect(mockRes.status).toHaveBeenCalledWith(StatusCodes.INTERNAL_SERVER_ERROR);
-    expect(mockRes.json).toHaveBeenCalledWith({ message: 'Internal Server Error' });
+      errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
+
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    });
+  })
+
+  describe("when handling non-ApiError", () => {
+    it("should return 500", () => {
+      const mockError = new Error("Unexpected error");
+      const result = errorHandler(mockError, mockReq, mockRes, mockNext
+      );
+
+      expect(result.status).toHaveBeenCalledWith(StatusCodes.INTERNAL_SERVER_ERROR);
+      expect(result.json).toHaveBeenCalledWith({
+        message: "Internal Server Error",
+      });
+    })
+
+    it("should return 500 for string error", () => {
+      const mockError = "Something went wrong";
+
+      const result = errorHandler(mockError, mockReq, mockRes, mockNext
+      );
+
+      expect(result.status).toHaveBeenCalledWith(StatusCodes.INTERNAL_SERVER_ERROR);
+      expect(result.json).toHaveBeenCalledWith({
+        message: "Internal Server Error",
+      });
+    });
   })
 })
