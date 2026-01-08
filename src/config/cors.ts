@@ -10,9 +10,9 @@ const allowedOrigins = env.CORS_ORIGINS.split(',').map(o => o.trim())
 const corsOptions: CorsOptions = {
   origin(origin, callback) {
     // Cho phép nếu không có origin (ví dụ Postman, curl)
-    if (!origin) return callback(null, true)
+    if (!origin && ['development', 'test', 'staging'].includes(env.NODE_ENV)) return callback(null, true)
 
-    if (allowedOrigins.includes(origin)) {
+    if (allowedOrigins.includes(origin as string)) {
       return callback(null, true)
     }
     // Nếu domain không được phép
