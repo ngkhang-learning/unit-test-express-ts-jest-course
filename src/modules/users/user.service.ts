@@ -1,6 +1,6 @@
 /** Author: @trungquandev (TrungQuanDev - Một Lập Trình Viên) - https://youtube.com/@trungquandev */
 
-import bcrypt from 'bcryptjs'
+import bcryptjs from 'bcryptjs'
 import { StatusCodes } from 'http-status-codes'
 
 import { ApiError } from '~/core/http/ApiError'
@@ -11,7 +11,9 @@ export const UserService = {
   async register(email: string, username: string, password: string) {
     const existed = await UserRepo.findByEmail(email)
     if (existed) throw new ApiError(StatusCodes.CONFLICT, 'Email already exists')
-    const passwordHash = await bcrypt.hash(password, 10)
+
+    const passwordHash = await bcryptjs.hash(password, 10)
+
     return UserRepo.create({
       email,
       username,
