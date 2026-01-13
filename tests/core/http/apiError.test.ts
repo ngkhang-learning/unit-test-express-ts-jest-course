@@ -5,7 +5,7 @@ import { ApiError } from "~/core/http/ApiError";
 describe("ApiError", () => {
   describe("Constructor", () => {
     it("should create error with statusCode, message, and details", () => {
-      const mockMessage = "Somethings went wrong";
+      const mockMessage = "Something went wrong";
       const mockStatusCode = StatusCodes.BAD_REQUEST;
       const mockDetails = { field: "email", issue: "invalid format" };
 
@@ -14,14 +14,14 @@ describe("ApiError", () => {
       expect(error.statusCode).toBe(mockStatusCode);
       expect(error.message).toBe(mockMessage);
       expect(error.details).toEqual(mockDetails);
-    })
+    });
 
     it("should be instance of both ApiError and Error", () => {
-      const error = new ApiError(StatusCodes.BAD_REQUEST, "Test Error")
+      const error = new ApiError(StatusCodes.BAD_REQUEST, "Test Error");
 
       expect(error).toBeInstanceOf(ApiError);
       expect(error).toBeInstanceOf(Error);
-    })
+    });
 
     it("should have stack trace containing error info", () => {
       const error = new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, "Internal Server Error");
@@ -29,23 +29,29 @@ describe("ApiError", () => {
       expect(error.stack).toBeDefined();
       expect(typeof error.stack).toBe("string");
       expect(error.stack).toContain("Error");
-    })
+    });
 
     it("should handle undefined details", () => {
       const error = new ApiError(StatusCodes.NOT_FOUND, "Not Found");
 
       expect(error.details).toBeUndefined();
-    })
+    });
+
+    it("should maintain prototype chain correctly", () => {
+      const error = new ApiError(StatusCodes.BAD_REQUEST, "Test");
+
+      expect(Object.getPrototypeOf(error)).toBe(ApiError.prototype);
+    });
   })
 
   describe("Static Factory Methods", () => {
     it("BadRequest (400): should create BadRequest with default message", () => {
       const error = ApiError.BadRequest();
 
-      expect(error.message).toBe("Bad Request")
-      expect(error.statusCode).toBe(StatusCodes.BAD_REQUEST)
-      expect(error.details).toBeUndefined()
-    })
+      expect(error.message).toBe("Bad Request");
+      expect(error.statusCode).toBe(StatusCodes.BAD_REQUEST);
+      expect(error.details).toBeUndefined();
+    });
 
     it("BadRequest (400): should create BadRequest with custom message and details", () => {
       const mockMessage = "Invalid input";
@@ -56,6 +62,13 @@ describe("ApiError", () => {
       expect(error.statusCode).toBe(StatusCodes.BAD_REQUEST);
       expect(error.message).toBe(mockMessage);
       expect(error.details).toEqual(mockDetails);
-    })
+    });
+
+    it("should return ApiError instance from static method", () => {
+      const error = ApiError.BadRequest();
+
+      expect(error).toBeInstanceOf(ApiError);
+      expect(error).toBeInstanceOf(Error);
+    });
   })
 })

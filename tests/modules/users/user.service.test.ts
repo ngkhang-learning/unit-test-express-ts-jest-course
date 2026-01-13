@@ -1,19 +1,10 @@
-// describe("", ()=>{
-//   it("", ()=> {})
-// })
 import bcryptjs from 'bcryptjs';
 import { StatusCodes } from "http-status-codes";
 
+import { ApiError } from '~/core/http/ApiError';
 import { UserRepo } from "~/modules/users/user.repo";
 import { UserService } from "~/modules/users/user.service";
 import { UserRole } from '~/modules/users/user.types';
-
-const mockUserData = {
-  _id: "fake-user-id-01",
-  email: "ngkhang@gmail.com",
-  username: "ngkhang",
-  password: "khang@12345"
-}
 
 jest.mock("~/modules/users/user.repo", () => ({
   UserRepo: {
@@ -25,81 +16,196 @@ jest.mock("~/modules/users/user.repo", () => ({
 }))
 
 jest.mock("bcryptjs", () => ({
-  // bcryptjs: {
   hash: jest.fn()
-  // }
 }))
 
 describe("UserService", () => {
-  describe("register() function", () => {
-    it("should throw error 409 (conflict) if user already exists", async () => {
-      ; (UserRepo.findByEmail as jest.Mock).mockResolvedValue(mockUserData);
+  const validUserData = {
+    email: "ngkhang@gmail.com",
+    username: "ngkhang",
+    password: "khang@12345"
+  };
 
-      const promise = UserService.register(mockUserData.email, mockUserData.username, mockUserData.password);
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
-      await expect(promise).rejects.toMatchObject({
-        statusCode: StatusCodes.CONFLICT,
-        message: 'Email already exists'
-      })
-      expect(UserRepo.findByEmail).toHaveBeenCalledTimes(1);
-      expect(UserRepo.findByEmail).toHaveBeenCalledWith(mockUserData.email);
+  describe("register()", () => {
+    describe("Error cases", () => {
+      it("should throw 409 Conflict when email already exists", async () => {
+        const existingUser = {
+          _id: "existing-user-id",
+          email: validUserData.email,
+          username: "existinguser",
+          password_hash: "hashed",
+          role: UserRole.USER
+        };
 
-      expect(bcryptjs.hash).not.toHaveBeenCalled();
-      expect(UserRepo.create).not.toHaveBeenCalled();
-    })
+        (UserRepo.findByEmail as jest.Mock).mockResolvedValue(existingUser);
 
-    it("should create user with role USER", async () => {
-      ; (UserRepo.findByEmail as jest.Mock).mockResolvedValue(null);
+        await expect(
+          UserService.register(validUserData.email, validUserData.username, validUserData.password)
+        ).rejects.toMatchObject({
+          statusCode: StatusCodes.CONFLICT,
+          message: 'Email already exists'
+        });
 
-      const mockHashedPassword = "hashed-password";
-      ; (bcryptjs.hash as jest.Mock).mockResolvedValue(mockHashedPassword);
-
-      const mockCreatedUserResponse = {
-        _id: "fake-user-id-01",
-        email: "ngkhang@gmail.com",
-        username: "ngkhang",
-        password: mockHashedPassword,
-        role: UserRole.USER
-      }
-        ; (UserRepo.create as jest.Mock).mockResolvedValue(mockCreatedUserResponse);
-
-
-      const result = await UserService.register(mockUserData.email, mockUserData.username, mockUserData.password);
-
-      expect(UserRepo.findByEmail).toHaveBeenCalledWith(mockUserData.email);
-      expect(bcryptjs.hash).toHaveBeenCalledWith(mockUserData.password, 10);
-
-      expect(UserRepo.create).toHaveBeenCalledWith({
-        email: mockCreatedUserResponse.email,
-        username: mockCreatedUserResponse.username,
-        password_hash: mockHashedPassword,
-        role: UserRole.USER
+        expect(UserRepo.findByEmail).toHaveBeenCalledWith(validUserData.email);
+        expect(UserRepo.findByEmail).toHaveBeenCalledTimes(1);
+        expect(bcryptjs.hash).not.toHaveBeenCalled();
+        expect(UserRepo.create).not.toHaveBeenCalled();
       });
 
-      expect(result).toBe(mockCreatedUserResponse);
+      it("should throw ApiError instance", async () => {
+        (UserRepo.findByEmail as jest.Mock).mockResolvedValue({ email: validUserData.email });
+
+        await expect(
+          UserService.register(validUserData.email, validUserData.username, validUserData.password)
+        ).rejects.toBeInstanceOf(ApiError);
+      });
+    })
+
+    describe("Success cases", () => {
+      beforeEach(() => {
+        (UserRepo.findByEmail as jest.Mock).mockResolvedValue(null);
+      });
+
+      it("should hash password with bcrypt", async () => {
+        const hashedPassword = "hashed-password-123";
+        (bcryptjs.hash as jest.Mock).mockResolvedValue(hashedPassword);
+
+        const mockCreatedUser = {
+          _id: "new-user-id",
+          email: validUserData.email,
+          username: validUserData.username,
+          password_hash: hashedPassword,
+          role: UserRole.USER
+        };
+
+        (UserRepo.create as jest.Mock).mockResolvedValue(mockCreatedUser);
+
+        await UserService.register(validUserData.email, validUserData.username, validUserData.password);
+
+        expect(bcryptjs.hash).toHaveBeenCalledWith(validUserData.password, 10);
+        expect(bcryptjs.hash).toHaveBeenCalledTimes(1);
+      });
+
+      it("should create user with hashed password and USER role", async () => {
+        const hashedPassword = "hashed-password-123";
+        (bcryptjs.hash as jest.Mock).mockResolvedValue(hashedPassword);
+
+        const mockCreatedUser = {
+          _id: "new-user-id",
+          email: validUserData.email,
+          username: validUserData.username,
+          password_hash: hashedPassword,
+          role: UserRole.USER
+        };
+
+        (UserRepo.create as jest.Mock).mockResolvedValue(mockCreatedUser);
+
+        await UserService.register(validUserData.email, validUserData.username, validUserData.password);
+
+        expect(UserRepo.create).toHaveBeenCalledWith({
+          email: validUserData.email,
+          username: validUserData.username,
+          password_hash: hashedPassword,
+          role: UserRole.USER
+        });
+        expect(UserRepo.create).toHaveBeenCalledTimes(1);
+      });
+
+      it("should return created user data", async () => {
+        const hashedPassword = "hashed-password-123";
+        (bcryptjs.hash as jest.Mock).mockResolvedValue(hashedPassword);
+
+        const mockCreatedUser = {
+          _id: "new-user-id",
+          email: validUserData.email,
+          username: validUserData.username,
+          password_hash: hashedPassword,
+          role: UserRole.USER,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+
+        (UserRepo.create as jest.Mock).mockResolvedValue(mockCreatedUser);
+
+        const result = await UserService.register(
+          validUserData.email,
+          validUserData.username,
+          validUserData.password
+        );
+
+        expect(result).toEqual(mockCreatedUser);
+        expect(result).toHaveProperty('_id');
+        expect(result).toHaveProperty('email', validUserData.email);
+        expect(result).toHaveProperty('username', validUserData.username);
+        expect(result).toHaveProperty('role', UserRole.USER);
+      });
     })
   })
 
-  describe("list() function", () => {
-    it("should return list of user", async () => {
-      const fakeUsersResponse = [
+  describe("list()", () => {
+    it("should call UserRepo.list without parameters", async () => {
+      const fakeUsers = [
         {
-          _id: "fake-user-id-01",
+          _id: "user-id-01",
           email: "user01@gmail.com",
           username: "user01",
+          password_hash: "hash1",
+          role: UserRole.USER
         },
         {
-          _id: "fake-user-id-02",
+          _id: "user-id-02",
           email: "user02@gmail.com",
           username: "user02",
+          password_hash: "hash2",
+          role: UserRole.USER
         }
-      ]
+      ];
 
-        ; (UserRepo.list as jest.Mock).mockResolvedValue(fakeUsersResponse);
-      const result = await UserService.list();
+      (UserRepo.list as jest.Mock).mockResolvedValue(fakeUsers);
+
+      await UserService.list();
 
       expect(UserRepo.list).toHaveBeenCalled();
-      expect(result).toBe(fakeUsersResponse);
-    })
+      expect(UserRepo.list).toHaveBeenCalledTimes(1);
+    });
+
+    it("should return list of users from repository", async () => {
+      const fakeUsers = [
+        {
+          _id: "user-id-01",
+          email: "user01@gmail.com",
+          username: "user01",
+          password_hash: "hash1",
+          role: UserRole.USER
+        }
+      ];
+
+      (UserRepo.list as jest.Mock).mockResolvedValue(fakeUsers);
+
+      const result = await UserService.list();
+
+      expect(result).toEqual(fakeUsers);
+      expect(result).toHaveLength(1);
+    });
+
+    it("should return empty array when no users", async () => {
+      (UserRepo.list as jest.Mock).mockResolvedValue([]);
+
+      const result = await UserService.list();
+
+      expect(result).toEqual([]);
+      expect(result).toHaveLength(0);
+    });
+
+    it("should propagate repository errors", async () => {
+      const error = new Error('Database connection failed');
+      (UserRepo.list as jest.Mock).mockRejectedValue(error);
+
+      await expect(UserService.list()).rejects.toThrow('Database connection failed');
+    });
   })
 })
