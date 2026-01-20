@@ -32,7 +32,7 @@ This repository serves as a complete guide to unit testing in modern Node.js app
   - MongoDB: ^6.20.0
 
 - **Testing Tools**
-  - Jest: ^30.2.0 - Testing framework
+  - Jest: ^29.7.0 - Testing framework
   - ts-jest: ^29.4.5 - TypeScript preprocessor for Jest
   - Supertest: ^7.2.2 - HTTP assertion library
   - @types/jest: ^30.0.0 - TypeScript definitions for Jest
